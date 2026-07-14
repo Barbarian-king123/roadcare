@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1074242601194",
+    "project_id": "roadcare-2d68d",
+    "storage_bucket": "roadcare-2d68d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1074242601194:android:5ee47d89061187f07dd793",
+        "android_client_info": {
+          "package_name": "com.example.roadcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxwZhWzJhFYnhHGkHEaZhCz_yQd7ytJaI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

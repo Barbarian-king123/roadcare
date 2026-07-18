@@ -17,7 +17,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // Default camera position — used until real user location is available.
   static const CameraPosition _defaultPosition = CameraPosition(
-    target: LatLng(28.6139, 77.2091), // New Delhi, placeholder center
+    target: LatLng(28.6139, 77.2090), // New Delhi, placeholder center
     zoom: 13,
   );
 

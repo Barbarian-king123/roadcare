@@ -115,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   child: const Text(
                     "Get Started",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -123,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
             ],
           ),
         ),

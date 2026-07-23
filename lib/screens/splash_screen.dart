@@ -87,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
               const Text(
                 "Together, let's build\nbetter and safer roads.",

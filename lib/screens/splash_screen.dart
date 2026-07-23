@@ -93,13 +93,13 @@ class _SplashScreenState extends State<SplashScreen> {
                 "Together, let's build\nbetter and safer roads.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 10,
                   color: Colors.white70,
                   height: 1.4,
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
               SizedBox(
                 width: double.infinity,

@@ -103,7 +103,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
               SizedBox(
                 width: double.infinity,
-                height: 45,
+                height: 55,
                 child: ElevatedButton(
                   onPressed: _handleGetStarted,
                   style: ElevatedButton.styleFrom(
@@ -115,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   child: const Text(
                     "Get Started",
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),

@@ -171,7 +171,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: _inputDecoration("Re-enter password", Icons.lock_outline),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               SizedBox(
                 width: double.infinity,
@@ -191,7 +191,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 20),
 
               Row(
                 children: [

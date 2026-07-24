@@ -121,12 +121,12 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 8),
               const Text(
                 "Join RoadCare and help build better roads",
-                style: TextStyle(color: Colors.grey, fontSize: 15),
+                style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
 
               const SizedBox(height: 28),
 
-              const Text("Full Name", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+              const Text("Full Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
               const SizedBox(height: 8),
               TextField(
                 controller: nameController,

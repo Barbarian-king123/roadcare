@@ -118,10 +118,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 "Create Account",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1A2332)),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               const Text(
                 "Join RoadCare and help build better roads",
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                style: TextStyle(color: Colors.grey, fontSize: 15),
               ),
 
               const SizedBox(height: 28),

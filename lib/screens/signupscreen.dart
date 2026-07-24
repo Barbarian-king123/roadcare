@@ -116,7 +116,7 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               const Text(
                 "Create Account",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF1A2332)),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1A2332)),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -127,7 +127,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 28),
 
               const Text("Full Name", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
-              const SizedBox(height: 7),
+              const SizedBox(height: 8),
               TextField(
                 controller: nameController,
                 decoration: _inputDecoration("Enter your name", Icons.person_outline),

@@ -143,7 +143,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: _inputDecoration("Enter your email", Icons.email_outlined),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
 
               const Text("Password", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
               const SizedBox(height: 8),

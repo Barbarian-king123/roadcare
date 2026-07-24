@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     Text(
                       "RoadCare",
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 30,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),

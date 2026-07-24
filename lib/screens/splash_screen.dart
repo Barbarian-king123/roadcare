@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
 
               // Illustration placeholder — road with pothole + city skyline
               Expanded(

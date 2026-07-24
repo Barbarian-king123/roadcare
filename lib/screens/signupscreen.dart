@@ -121,7 +121,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 6),
               const Text(
                 "Join RoadCare and help build better roads",
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                style: TextStyle(color: Colors.grey, fontSize: 15),
               ),
 
               const SizedBox(height: 28),

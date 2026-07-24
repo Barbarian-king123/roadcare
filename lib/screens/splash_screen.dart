@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     Text(
                       "Smart Road Issue Reporter",
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         color: Colors.white70,
                       ),
                     ),

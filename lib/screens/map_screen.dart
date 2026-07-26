@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/issue.dart';
 import 'issue_detail_screen.dart';
@@ -13,15 +14,11 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  GoogleMapController? mapController;
+  final MapController _mapController = MapController();
 
-  // Default camera position — used until real user location is available.
-  static const CameraPosition _defaultPosition = CameraPosition(
-    target: LatLng(28.6139, 77.2090), // New Delhi, placeholder center
-    zoom: 13,
-  );
+  // Default center — used until real user location is available.
+  static const LatLng _defaultCenter = LatLng(28.6139, 77.2090); // New Delhi
 
-  Set<Marker> markers = {};
   Set<IssueSeverity?> activeFilters = {
     IssueSeverity.high,
     IssueSeverity.medium,
@@ -29,52 +26,25 @@ class _MapScreenState extends State<MapScreen> {
     null, // null = Resolved filter
   };
 
-  @override
-  void initState() {
-    super.initState();
-    _buildMarkers();
-  }
-
-  void _buildMarkers() {
-    final filtered = dummyIssues.where((issue) {
+  List<Issue> get _filteredIssues {
+    return dummyIssues.where((issue) {
+      if (issue.latitude == null || issue.longitude == null) return false;
       if (issue.status == IssueStatus.resolved) {
         return activeFilters.contains(null);
       }
       return activeFilters.contains(issue.severity);
     }).toList();
-
-    setState(() {
-      markers = filtered
-          .where((issue) => issue.latitude != null && issue.longitude != null)
-          .map((issue) {
-        return Marker(
-          markerId: MarkerId(issue.id),
-          position: LatLng(issue.latitude!, issue.longitude!),
-          icon: BitmapDescriptor.defaultMarkerWithHue(_hueFor(issue)),
-          infoWindow: InfoWindow(
-            title: issue.title,
-            snippet: issue.location,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => IssueDetailScreen(issue: issue)),
-              );
-            },
-          ),
-        );
-      }).toSet();
-    });
   }
 
-  double _hueFor(Issue issue) {
-    if (issue.status == IssueStatus.resolved) return BitmapDescriptor.hueGreen;
+  Color _colorFor(Issue issue) {
+    if (issue.status == IssueStatus.resolved) return Colors.blueGrey;
     switch (issue.severity) {
       case IssueSeverity.high:
-        return BitmapDescriptor.hueRed;
+        return Colors.red;
       case IssueSeverity.medium:
-        return BitmapDescriptor.hueOrange;
+        return Colors.orange;
       case IssueSeverity.low:
-        return BitmapDescriptor.hueGreen;
+        return Colors.green;
     }
   }
 
@@ -100,12 +70,7 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     final position = await Geolocator.getCurrentPosition();
-    mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(position.latitude, position.longitude),
-        15,
-      ),
-    );
+    _mapController.move(LatLng(position.latitude, position.longitude), 15);
   }
 
   void _showSnack(String message) {
@@ -120,7 +85,6 @@ class _MapScreenState extends State<MapScreen> {
         activeFilters.add(severity);
       }
     });
-    _buildMarkers();
   }
 
   Widget _legendDot(String label, Color color, IssueSeverity? severity) {
@@ -164,13 +128,42 @@ class _MapScreenState extends State<MapScreen> {
       ),
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: _defaultPosition,
-            markers: markers,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            onMapCreated: (controller) => mapController = controller,
+          FlutterMap(
+            mapController: _mapController,
+            options: const MapOptions(
+              initialCenter: _defaultCenter,
+              initialZoom: 13,
+            ),
+            children: [
+              // Free OpenStreetMap tiles — no API key, no billing.
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                // REQUIRED by OSM's usage policy — set this to your actual
+                // app id (e.g. com.yourcompany.roadcare), not a placeholder,
+                // before you ship.
+                userAgentPackageName: 'com.example.roadcare',
+              ),
+              MarkerLayer(
+                markers: _filteredIssues.map((issue) {
+                  return Marker(
+                    point: LatLng(issue.latitude!, issue.longitude!),
+                    width: 40,
+                    height: 40,
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => IssueDetailScreen(issue: issue)),
+                      ),
+                      child: Icon(
+                        Icons.location_on,
+                        color: _colorFor(issue),
+                        size: 38,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
 
           // Locate-me button
@@ -197,7 +190,7 @@ class _MapScreenState extends State<MapScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ReportIssueScreen()),
-                ).then((_) => _buildMarkers());
+                ).then((_) => setState(() {}));
               },
               child: const Icon(Icons.add, color: Colors.white),
             ),

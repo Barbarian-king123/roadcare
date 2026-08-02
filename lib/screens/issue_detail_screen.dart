@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/issue.dart';
 
 class IssueDetailScreen extends StatefulWidget {
@@ -47,14 +48,19 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
       }
       hasUpvoted = !hasUpvoted;
     });
-    // TODO: persist upvote to Firestore once backend is wired up.
+    // TODO: persist upvote to Firestore once backend is wired up, e.g.
+    // FirebaseFirestore.instance.collection('issues').doc(widget.issue.id)
+    //     .update({'upvotes': FieldValue.increment(hasUpvoted ? 1 : -1)});
   }
 
-  void _share() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Share coming soon")),
-    );
-    // TODO: use share_plus package for real sharing.
+  Future<void> _share() async {
+    final issue = widget.issue;
+    final text = 'Road issue reported on RoadCare:\n'
+        '${issue.title} at ${issue.location}\n'
+        '${issue.description.isEmpty ? "" : "${issue.description}\n"}'
+        'Status: ${issue.status == IssueStatus.resolved ? "Resolved" : issue.severityLabel}';
+
+    await Share.share(text, subject: 'RoadCare — ${issue.title}');
   }
 
   @override
@@ -183,7 +189,6 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Small map preview placeholder
                   Container(
                     width: double.infinity,
                     height: 140,

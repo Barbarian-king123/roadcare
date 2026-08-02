@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../models/issue.dart';
 
 class ReportIssueScreen extends StatefulWidget {
@@ -13,6 +15,7 @@ class ReportIssueScreen extends StatefulWidget {
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
   File? selectedImage;
   String? selectedIssueType;
+  bool _locating = false;
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
 
@@ -66,8 +69,62 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     }
   }
 
+  /// Fetches the device's current GPS position and reverse-geocodes it into
+  /// a human-readable address, filling the location field automatically.
+  Future<void> _useCurrentLocation() async {
+    setState(() => _locating = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showSnack("Please enable location services to use this");
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _showSnack("Location permission denied");
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        _showSnack("Location permission permanently denied. Enable it from app settings.");
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      String formatted = "${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}";
+
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          final parts = [p.street, p.subLocality, p.locality]
+              .where((e) => e != null && e.trim().isNotEmpty)
+              .toList();
+          if (parts.isNotEmpty) formatted = parts.join(', ');
+        }
+      } catch (_) {
+        // Reverse geocoding failed (e.g. offline) — fall back to raw coords.
+      }
+
+      if (!mounted) return;
+      setState(() => locationController.text = formatted);
+    } catch (e) {
+      _showSnack("Couldn't get your location. Please enter it manually.");
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
   IssueSeverity _severityFor(String? type) {
-    // Simple default mapping — can be made smarter later.
     switch (type) {
       case 'Pothole':
       case 'Damaged Manhole':
@@ -109,7 +166,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       reportedBy: "You",
     );
 
-    // Dummy data for now — will be replaced with a Firestore write.
+    // NOTE: still writing to the in-memory dummyIssues list. Swap this for
+    // a Firestore write (e.g. FirebaseFirestore.instance.collection('issues')
+    // .add(newIssue.toMap())) once your backend schema is ready.
     dummyIssues.insert(0, newIssue);
 
     Navigator.pop(context);
@@ -163,7 +222,6 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   border: Border.all(
                     color: Colors.grey.shade300,
                     width: 1.5,
-                    style: BorderStyle.solid,
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -259,13 +317,19 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 hintText: "Model Town, Main Street",
                 filled: true,
                 fillColor: Colors.grey.shade50,
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.my_location, color: Color(0xFF2563EB)),
-                  onPressed: () {
-                    // Placeholder — will use geolocator to auto-fill current location.
-                    _showSnack("Auto-location coming soon");
-                  },
-                ),
+                suffixIcon: _locating
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.my_location, color: Color(0xFF2563EB)),
+                        onPressed: _useCurrentLocation,
+                      ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.grey.shade300),

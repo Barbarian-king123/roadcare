@@ -1,269 +1,310 @@
 import 'package:flutter/material.dart';
-import '../models/issue.dart';
-import '../widgets/bottom_nav_bar.dart';
-import 'map_screen.dart';
-import 'report_issue_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 import 'my_reports_screen.dart';
-import 'profile_screen.dart';
-import 'issue_detail_screen.dart';
+import 'notification_screen.dart';
+import 'loginscreen.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  static const Color kBrandBlue = Color(0xFF2563EB);
 
-class _HomeScreenState extends State<HomeScreen> {
-  int selectedTabIndex = 0;
-  final List<String> tabs = ["All", "Nearby", "Recent", "Popular"];
+  Future<void> _logout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text("Logout", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
 
-  int navIndex = 0;
+    if (confirm == true && context.mounted) {
+      await AuthService().signOut();
 
-  List<Issue> get filteredIssues {
-    List<Issue> issues = List.from(dummyIssues);
-
-    switch (selectedTabIndex) {
-      case 2: // Recent
-        issues.sort((a, b) => b.reportedAt.compareTo(a.reportedAt));
-        break;
-      case 3: // Popular
-        issues.sort((a, b) => b.upvotes.compareTo(a.upvotes));
-        break;
-      default:
-        break; // All / Nearby — no special sort for now (dummy data)
-    }
-
-    return issues;
-  }
-
-  Color _severityColor(IssueSeverity severity) {
-    switch (severity) {
-      case IssueSeverity.high:
-        return Colors.red;
-      case IssueSeverity.medium:
-        return Colors.orange;
-      case IssueSeverity.low:
-        return Colors.green;
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
   }
 
-  String _formatDate(DateTime date) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '${date.day} ${months[date.month - 1]} ${date.year} \u00b7 $hour:$minute $period';
-  }
+  Future<void> _changePassword(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email;
 
-  void _onNavTap(int index) {
-    if (index == navIndex) return;
+    if (email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No email on this account (e.g. Google sign-in only).")),
+      );
+      return;
+    }
 
-    setState(() => navIndex = index);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Change Password"),
+        content: Text("We'll send a password reset link to $email."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: kBrandBlue),
+            child: const Text("Send Link", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
 
-    switch (index) {
-      case 1:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen()))
-            .then((_) => setState(() => navIndex = 0));
-        break;
-      case 3:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const MyReportsScreen()))
-            .then((_) => setState(() => navIndex = 0));
-        break;
-      case 4:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
-            .then((_) => setState(() => navIndex = 0));
-        break;
+    if (confirm != true || !context.mounted) return;
+
+    try {
+      await AuthService().sendPasswordResetEmail(email);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Reset link sent to $email")),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AuthService().getErrorMessage(e))),
+      );
     }
   }
 
-  void _onReportTap() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ReportIssueScreen()),
+  void _showInfoSheet(BuildContext context, {required String title, required String body}) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text(body, style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.5)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kBrandBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("Close", style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final userName = (user?.displayName?.trim().isNotEmpty ?? false) ? user!.displayName! : "RoadCare User";
+    final userEmail = user?.email ?? "No email on file";
+    final userPhone = user?.phoneNumber;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2563EB),
-        elevation: 0,
-        title: const Text(
-          "RoadCare",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Filter tabs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: List.generate(tabs.length, (index) {
-                final isActive = selectedTabIndex == index;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(tabs[index]),
-                    selected: isActive,
-                    onSelected: (_) => setState(() => selectedTabIndex = index),
-                    selectedColor: const Color(0xFF2563EB),
-                    labelStyle: TextStyle(
-                      color: isActive ? Colors.white : Colors.black87,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: isActive ? const Color(0xFF2563EB) : Colors.grey.shade300,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Blue curved header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 40),
+              decoration: const BoxDecoration(
+                color: kBrandBlue,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Profile",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                );
-              }),
-            ),
-          ),
-
-          // Issue list
-          Expanded(
-            child: filteredIssues.isEmpty
-                ? const Center(
-                    child: Text(
-                      "No issues reported yet.",
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                  const SizedBox(height: 20),
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 44,
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundImage: user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
+                        child: user?.photoURL == null
+                            ? const Icon(Icons.person, size: 48, color: Colors.white)
+                            : null,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredIssues.length,
-                    itemBuilder: (context, index) =>
-                        _buildIssueCard(filteredIssues[index]),
-                  ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onReportTap,
-        backgroundColor: const Color(0xFF2563EB),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: RoadCareBottomNav(
-        currentIndex: navIndex,
-        onTap: _onNavTap,
-        onReportTap: _onReportTap,
-      ),
-    );
-  }
-
-  Widget _buildIssueCard(Issue issue) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => IssueDetailScreen(issue: issue)),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 70,
-                height: 70,
-                color: Colors.grey.shade200,
-                child: Icon(
-                  Icons.image_outlined,
-                  color: Colors.grey.shade400,
-                  size: 28,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    issue.title,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    issue.location,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatDate(issue.reportedAt),
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    userEmail,
+                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _severityColor(issue.severity),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          issue.status == IssueStatus.resolved
-                              ? "Resolved"
-                              : issue.severityLabel,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                  if (userPhone != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      userPhone,
+                      style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.assignment_outlined,
+                    label: "My Reports",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyReportsScreen()),
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.notifications_outlined,
+                    label: "Notifications",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.lock_outline,
+                    label: "Change Password",
+                    onTap: () => _changePassword(context),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.help_outline,
+                    label: "Help & Support",
+                    onTap: () => _showInfoSheet(
+                      context,
+                      title: "Help & Support",
+                      body: "Having trouble with a report or the app? Reach us at "
+                          "support@roadcare.app and we'll get back to you within 24-48 hours.",
+                    ),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.info_outline,
+                    label: "About Us",
+                    onTap: () => _showInfoSheet(
+                      context,
+                      title: "About RoadCare",
+                      body: "RoadCare lets citizens report potholes, broken lights, and "
+                          "other road issues directly to local authorities, and track "
+                          "each report from submission to resolution — building safer "
+                          "streets together.",
+                    ),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.logout,
+                    label: "Logout",
+                    isDestructive: true,
+                    onTap: () => _logout(context),
                   ),
                 ],
               ),
             ),
-            Column(
-              children: [
-                const Icon(Icons.thumb_up_alt_outlined, size: 16, color: Colors.grey),
-                const SizedBox(height: 2),
-                Text(
-                  "${issue.upvotes}",
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
+
+            const SizedBox(height: 30),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: isDestructive ? Colors.red : kBrandBlue),
+        title: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDestructive ? Colors.red : Colors.black87,
+          ),
+        ),
+        trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

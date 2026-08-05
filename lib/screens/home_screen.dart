@@ -1,311 +1,596 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/auth_service.dart';
+import 'package:roadcare/theme.dart';
 import 'my_reports_screen.dart';
 import 'notification_screen.dart';
-import 'loginscreen.dart';
+import 'profile_screen.dart';
+import 'report_issue_screen.dart';
+import 'map_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-  static const Color kBrandBlue = Color(0xFF2563EB);
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  Future<void> _logout(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Logout"),
-        content: const Text("Are you sure you want to logout?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text("Logout", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentTab = 0;
 
-    if (confirm == true && context.mounted) {
-      await AuthService().signOut();
+  final List<Map<String, String>> _recentReports = const [
+    {
+      "title": "Large pothole on MG Road",
+      "category": "Pothole",
+      "status": "In Progress",
+      "distance": "0.4 km away",
+      "time": "2 hrs ago",
+    },
+    {
+      "title": "Broken streetlight near City Park",
+      "category": "Streetlight",
+      "status": "Submitted",
+      "distance": "1.1 km away",
+      "time": "5 hrs ago",
+    },
+    {
+      "title": "Damaged sign, Sector 9",
+      "category": "Traffic Sign",
+      "status": "Resolved",
+      "distance": "2.3 km away",
+      "time": "1 day ago",
+    },
+  ];
 
-      if (!context.mounted) return;
-      Navigator.pushAndRemoveUntil(
+  Color _statusColor(String status) {
+    switch (status) {
+      case "Resolved":
+        return RoadCareColors.success;
+      case "In Progress":
+        return RoadCareColors.warning;
+      default:
+        return RoadCareColors.primary;
+    }
+  }
+
+  IconData _categoryIcon(String category) {
+    switch (category) {
+      case "Pothole":
+        return Icons.warning_amber_rounded;
+      case "Streetlight":
+        return Icons.lightbulb_outline_rounded;
+      case "Traffic Sign":
+        return Icons.signpost_outlined;
+      default:
+        return Icons.report_problem_outlined;
+    }
+  }
+
+  void _onTabTapped(int index) {
+    if (index == _currentTab) return;
+
+    setState(() => _currentTab = index);
+
+    Widget? destination;
+    switch (index) {
+      case 1:
+        destination = const MyReportsScreen();
+        break;
+      case 2:
+        destination = const NotificationsScreen();
+        break;
+      case 3:
+        destination = const ProfileScreen();
+        break;
+    }
+
+    if (destination != null) {
+      Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
+        MaterialPageRoute(builder: (_) => destination!),
+      ).then((_) {
+        if (mounted) setState(() => _currentTab = 0);
+      });
     }
-  }
-
-  Future<void> _changePassword(BuildContext context) async {
-    final user = FirebaseAuth.instance.currentUser;
-    final email = user?.email;
-
-    if (email == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No email on this account (e.g. Google sign-in only).")),
-      );
-      return;
-    }
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Change Password"),
-        content: Text("We'll send a password reset link to $email."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: kBrandBlue),
-            child: const Text("Send Link", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true || !context.mounted) return;
-
-    try {
-      await AuthService().sendPasswordResetEmail(email);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Reset link sent to $email")),
-      );
-    } on FirebaseAuthException catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AuthService().getErrorMessage(e))),
-      );
-    }
-  }
-
-  void _showInfoSheet(BuildContext context, {required String title, required String body}) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Text(body, style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.5)),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kBrandBlue,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text("Close", style: TextStyle(color: Colors.white)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final userName = (user?.displayName?.trim().isNotEmpty ?? false) ? user!.displayName! : "RoadCare User";
-    final userEmail = user?.email ?? "No email on file";
-    final userPhone = user?.phoneNumber;
+    final firstName = (user?.displayName?.trim().isNotEmpty ?? false)
+        ? user!.displayName!.split(" ").first
+        : "there";
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Blue curved header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 40),
-              decoration: const BoxDecoration(
-                color: kBrandBlue,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+      backgroundColor: RoadCareColors.background,
+      body: SafeArea(
+        top: false,
+        child: CustomScrollView(
+          slivers: [
+            // Top Hero Header Banner
+            SliverToBoxAdapter(
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.fromLTRB(
+                  22,
+                  MediaQuery.of(context).padding.top + 16,
+                  22,
+                  28,
                 ),
-              ),
-              child: Column(
-                children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Profile",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      RoadCareColors.primary,
+                      RoadCareColors.primaryDark,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x339E4300),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                              child: Text(
+                                firstName[0].toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Hi, $firstName 👋",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Let's make streets safer today",
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.88),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            onPressed: () => _onTabTapped(2),
+                            icon: const Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Primary Action Button (Report an Issue)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ReportIssueScreen(),
+                            ),
+                          ).then((_) {
+                            if (mounted) setState(() {});
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.add_location_alt_rounded,
+                          color: RoadCareColors.primary,
+                          size: 24,
+                        ),
+                        label: const Text(
+                          "Report a Road Hazard",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: RoadCareColors.primary,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          elevation: 2,
+                          shadowColor: Colors.black.withValues(alpha: 0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 44,
-                        backgroundColor: Colors.white.withOpacity(0.2),
-                        backgroundImage: user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
-                        child: user?.photoURL == null
-                            ? const Icon(Icons.person, size: 48, color: Colors.white)
-                            : null,
+                  ],
+                ),
+              ),
+            ),
+
+            // Quick Actions Grid
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.map_outlined,
+                        label: "Live Map",
+                        color: const Color(0xFF2563EB),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MapScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.assignment_outlined,
+                        label: "My Reports",
+                        color: RoadCareColors.primary,
+                        onTap: () => _onTabTapped(1),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.shield_outlined,
+                        label: "Safety Status",
+                        color: RoadCareColors.success,
+                        onTap: () {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Community Impact Card
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Text(
-                    userName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _StatColumn(
+                        count: "148",
+                        label: "Fixed",
+                        color: RoadCareColors.success,
+                      ),
+                      Container(height: 36, width: 1, color: const Color(0xFFE5E7EB)),
+                      _StatColumn(
+                        count: "24",
+                        label: "In Progress",
+                        color: RoadCareColors.warning,
+                      ),
+                      Container(height: 36, width: 1, color: const Color(0xFFE5E7EB)),
+                      _StatColumn(
+                        count: "98%",
+                        label: "Resolved",
+                        color: RoadCareColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Recent Reports Header
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Recent Nearby Reports",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: RoadCareColors.onSurface,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    userEmail,
-                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
-                  ),
-                  if (userPhone != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      userPhone,
-                      style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                    TextButton(
+                      onPressed: () => _onTabTapped(1),
+                      child: const Text(
+                        "See all",
+                        style: TextStyle(
+                          color: RoadCareColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.assignment_outlined,
-                    label: "My Reports",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MyReportsScreen()),
-                      );
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.notifications_outlined,
-                    label: "Notifications",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                      );
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.lock_outline,
-                    label: "Change Password",
-                    onTap: () => _changePassword(context),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.help_outline,
-                    label: "Help & Support",
-                    onTap: () => _showInfoSheet(
-                      context,
-                      title: "Help & Support",
-                      body: "Having trouble with a report or the app? Reach us at "
-                          "support@roadcare.app and we'll get back to you within 24-48 hours.",
+            // Recent Reports List
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              sliver: SliverList.separated(
+                itemCount: _recentReports.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final report = _recentReports[index];
+                  final status = report["status"]!;
+                  final category = report["category"]!;
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.info_outline,
-                    label: "About Us",
-                    onTap: () => _showInfoSheet(
-                      context,
-                      title: "About RoadCare",
-                      body: "RoadCare lets citizens report potholes, broken lights, and "
-                          "other road issues directly to local authorities, and track "
-                          "each report from submission to resolution — building safer "
-                          "streets together.",
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: RoadCareColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            _categoryIcon(category),
+                            color: RoadCareColors.primary,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                report["title"]!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.near_me_outlined,
+                                    size: 13,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    report["distance"]!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "• ${report["time"]}",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _statusColor(status).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: _statusColor(status),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.logout,
-                    label: "Logout",
-                    isDestructive: true,
-                    onTap: () => _logout(context),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-
-            const SizedBox(height: 30),
           ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentTab,
+        onTap: _onTabTapped,
+        selectedItemColor: RoadCareColors.primary,
+        unselectedItemColor: const Color(0xFF6B7280),
+        backgroundColor: Colors.white,
+        elevation: 8,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home_rounded),
+            label: "Home",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment_outlined),
+            activeIcon: Icon(Icons.assignment_rounded),
+            label: "My Reports",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined),
+            activeIcon: Icon(Icons.notifications_rounded),
+            label: "Alerts",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person_rounded),
+            label: "Profile",
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildMenuItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: isDestructive ? Colors.red : kBrandBlue),
-        title: Text(
-          label,
+class _StatColumn extends StatelessWidget {
+  final String count;
+  final String label;
+  final Color color;
+
+  const _StatColumn({
+    required this.count,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          count,
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isDestructive ? Colors.red : Colors.black87,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: color,
           ),
         ),
-        trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
     );
   }
 }

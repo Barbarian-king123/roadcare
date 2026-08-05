@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:roadcare/theme.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'loginscreen.dart';
@@ -79,8 +80,6 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _goToLogin() {
-    // If we were pushed from LoginScreen, pop back to it. If SignupScreen
-    // was opened directly (e.g. from onboarding), push a fresh LoginScreen.
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
@@ -123,7 +122,11 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 const Text(
                   "Create Account",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1A2332)),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A2332),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -133,7 +136,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 28),
 
-                const Text("Full Name", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+                const Text(
+                  "Full Name",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: RoadCareColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: nameController,
@@ -143,7 +153,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 18),
 
-                const Text("Email", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+                const Text(
+                  "Email",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: RoadCareColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: emailController,
@@ -158,7 +175,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 18),
 
-                const Text("Password", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+                const Text(
+                  "Password",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: RoadCareColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: passwordController,
@@ -181,7 +205,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 18),
 
-                const Text("Confirm Password", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+                const Text(
+                  "Confirm Password",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: RoadCareColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: confirmPasswordController,
@@ -198,7 +229,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _signup,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
+                      backgroundColor: RoadCareColors.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: _loading
@@ -207,7 +238,10 @@ class _SignupScreenState extends State<SignupScreen> {
                             width: 22,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
-                        : const Text("Sign Up", style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
+                        : const Text(
+                            "Sign Up",
+                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
                   ),
                 ),
 
@@ -232,7 +266,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _loading ? null : _signupWithGoogle,
                     icon: const Icon(Icons.g_mobiledata, size: 28, color: Colors.black87),
-                    label: const Text("Continue with Google", style: TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w600)),
+                    label: const Text(
+                      "Continue with Google",
+                      style: TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w600),
+                    ),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Colors.grey.shade300),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -249,7 +286,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       const Text("Already have an account?", style: TextStyle(color: Colors.grey)),
                       TextButton(
                         onPressed: _goToLogin,
-                        child: const Text("Log In", style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          "Log In",
+                          style: TextStyle(color: RoadCareColors.primary, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ],
                   ),
@@ -267,7 +307,7 @@ class _SignupScreenState extends State<SignupScreen> {
   InputDecoration _inputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(icon, color: const Color(0xFF2563EB)),
+      prefixIcon: Icon(icon, color: RoadCareColors.primary),
       filled: true,
       fillColor: Colors.grey.shade50,
       border: OutlineInputBorder(
@@ -280,7 +320,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+        borderSide: const BorderSide(color: RoadCareColors.primary, width: 2),
       ),
     );
   }

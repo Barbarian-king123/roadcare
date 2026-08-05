@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:roadcare/theme.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'signupscreen.dart';
@@ -51,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _authService.signInWithGoogle();
       if (result == null) {
         setState(() => _loading = false);
-        return; // user cancelled the picker
+        return;
       }
 
       if (!mounted) return;
@@ -109,7 +110,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
                 const Text(
                   "Welcome Back",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1A2332)),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A2332),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -119,7 +124,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 28),
 
-                const Text("Email", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+                const Text(
+                  "Email",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: RoadCareColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: emailController,
@@ -134,7 +146,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 18),
 
-                const Text("Password", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+                const Text(
+                  "Password",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: RoadCareColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: passwordController,
@@ -160,7 +179,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _forgotPassword,
                     child: const Text(
                       "Forgot password?",
-                      style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: RoadCareColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -173,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _login,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
+                      backgroundColor: RoadCareColors.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: _loading
@@ -237,7 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: const Text(
                           "Sign Up",
-                          style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
+                          style: TextStyle(color: RoadCareColors.primary, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -256,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
   InputDecoration _inputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(icon, color: const Color(0xFF2563EB)),
+      prefixIcon: Icon(icon, color: RoadCareColors.primary),
       filled: true,
       fillColor: Colors.grey.shade50,
       border: OutlineInputBorder(
@@ -269,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+        borderSide: const BorderSide(color: RoadCareColors.primary, width: 2),
       ),
     );
   }

@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 
 class RoadCareColors {
-  static const Color primary = Color(0xFF9E4300);
-  static const Color primaryDark = Color(0xFF7A3300);
+  static const Color primary = Color(0xFF2563EB); // Vibrant Brand Blue
+  static const Color primaryDark = Color(0xFF1E3A8A); // Deep Blue
+  static const Color accentOrange = Color(0xFF9E4300); // Warm Accent Orange
   static const Color onPrimary = Colors.white;
-  static const Color primaryContainer = Color(0xFFFF7000);
-  static const Color onPrimaryContainer = Color(0xFF592300);
-  static const Color background = Color(0xFFF9F9F9);
+  static const Color primaryContainer = Color(0xFFDBEAFE);
+  static const Color onPrimaryContainer = Color(0xFF1E40AF);
+  static const Color background = Color(0xFFF8FAFC); // Clean Blue-White background
   static const Color surface = Colors.white;
-  static const Color surfaceContainer = Color(0xFFF3F3F4);
-  static const Color surfaceVariant = Color(0xFFE5E7EB);
-  static const Color onSurface = Color(0xFF1A1C1C);
-  static const Color onSurfaceVariant = Color(0xFF594236);
-  static const Color outline = Color(0xFF8D7164);
-  static const Color neutral = Color(0xFF5B5F64);
-  static const Color error = Color(0xFFBA1A1A);
+  static const Color surfaceContainer = Color(0xFFF1F5F9);
+  static const Color surfaceVariant = Color(0xFFE2E8F0);
+  static const Color onSurface = Color(0xFF0F172A);
+  static const Color onSurfaceVariant = Color(0xFF475569);
+  static const Color outline = Color(0xFF94A3B8);
+  static const Color neutral = Color(0xFF64748B);
+  static const Color error = Color(0xFFDC2626);
   static const Color success = Color(0xFF16A34A);
   static const Color warning = Color(0xFFD97706);
   static const Color brandNavy = Color(0xFF0F172A);

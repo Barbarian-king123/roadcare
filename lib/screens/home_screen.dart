@@ -95,18 +95,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final firstName = (user?.displayName?.trim().isNotEmpty ?? false)
-        ? user!.displayName!.split(" ").first
-        : "there";
+    // Home header is static (no greeting shown)
 
     return Scaffold(
-      backgroundColor: RoadCareColors.background,
+      backgroundColor: const Color(0xFFF8FAFC), // Clean white-blue background
       body: SafeArea(
         top: false,
         child: CustomScrollView(
           slivers: [
-            // Top Hero Header Banner
+            // Blue Hero Banner Header
             SliverToBoxAdapter(
               child: Container(
                 width: double.infinity,
@@ -121,8 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      RoadCareColors.primary,
-                      RoadCareColors.primaryDark,
+                      Color(0xFF2563EB), // Vibrant Blue
+                      Color(0xFF1D4ED8), // Deep Blue
                     ],
                   ),
                   borderRadius: BorderRadius.only(
@@ -131,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0x339E4300),
+                      color: Color(0x332563EB),
                       blurRadius: 20,
                       offset: Offset(0, 8),
                     ),
@@ -143,47 +140,35 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: Colors.white.withValues(alpha: 0.2),
-                              child: Text(
-                                firstName[0].toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
+                        // App title + short tagline (no personal greeting)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'ROADCARE',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Hi, $firstName 👋",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "Let's make streets safer today",
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.88),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
+                            SizedBox(height: 6),
+                            Text(
+                              "Make your streets safer",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
+
+                        // Notifications icon
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
+                            color: Colors.white.withOpacity(0.12),
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
@@ -198,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Primary Action Button (Report an Issue)
+                    // Primary White Action Button inside Blue Header
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -215,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                         icon: const Icon(
                           Icons.add_location_alt_rounded,
-                          color: RoadCareColors.primary,
+                          color: Color(0xFF2563EB),
                           size: 24,
                         ),
                         label: const Text(
@@ -223,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: RoadCareColors.primary,
+                            color: Color(0xFF2563EB),
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -241,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Quick Actions Grid
+            // Quick Actions Grid (Blue & White)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               sliver: SliverToBoxAdapter(
@@ -267,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: _QuickActionCard(
                         icon: Icons.assignment_outlined,
                         label: "My Reports",
-                        color: RoadCareColors.primary,
+                        color: const Color(0xFF1D4ED8),
                         onTap: () => _onTabTapped(1),
                       ),
                     ),
@@ -276,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: _QuickActionCard(
                         icon: Icons.shield_outlined,
                         label: "Safety Status",
-                        color: RoadCareColors.success,
+                        color: const Color(0xFF0284C7),
                         onTap: () {},
                       ),
                     ),
@@ -285,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Community Impact Card
+            // Community Impact Card (White Container with Blue highlights)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               sliver: SliverToBoxAdapter(
@@ -294,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.03),
@@ -311,17 +296,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: "Fixed",
                         color: RoadCareColors.success,
                       ),
-                      Container(height: 36, width: 1, color: const Color(0xFFE5E7EB)),
+                      Container(height: 36, width: 1, color: const Color(0xFFE2E8F0)),
                       _StatColumn(
                         count: "24",
                         label: "In Progress",
                         color: RoadCareColors.warning,
                       ),
-                      Container(height: 36, width: 1, color: const Color(0xFFE5E7EB)),
+                      Container(height: 36, width: 1, color: const Color(0xFFE2E8F0)),
                       _StatColumn(
                         count: "98%",
                         label: "Resolved",
-                        color: RoadCareColors.primary,
+                        color: const Color(0xFF2563EB),
                       ),
                     ],
                   ),
@@ -329,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Recent Reports Header
+            // Recent Reports Section Header
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               sliver: SliverToBoxAdapter(
@@ -341,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: RoadCareColors.onSurface,
+                        color: Color(0xFF0F172A),
                       ),
                     ),
                     TextButton(
@@ -349,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: const Text(
                         "See all",
                         style: TextStyle(
-                          color: RoadCareColors.primary,
+                          color: Color(0xFF2563EB),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -359,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Recent Reports List
+            // Recent Reports Cards (Blue Accent + White Cards)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               sliver: SliverList.separated(
@@ -374,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.02),
@@ -389,12 +374,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: RoadCareColors.primary.withValues(alpha: 0.1),
+                            color: const Color(0xFFDBEAFE),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
                             _categoryIcon(category),
-                            color: RoadCareColors.primary,
+                            color: const Color(0xFF2563EB),
                             size: 26,
                           ),
                         ),
@@ -408,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 15,
-                                  color: Color(0xFF111827),
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -470,10 +455,10 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentTab,
         onTap: _onTabTapped,
-        selectedItemColor: RoadCareColors.primary,
-        unselectedItemColor: const Color(0xFF6B7280),
+        selectedItemColor: const Color(0xFF2563EB),
+        unselectedItemColor: const Color(0xFF64748B),
         backgroundColor: Colors.white,
-        elevation: 8,
+        elevation: 10,
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
@@ -528,7 +513,7 @@ class _QuickActionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -547,7 +532,7 @@ class _QuickActionCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2937),
+                  color: Color(0xFF0F172A),
                 ),
               ),
             ],

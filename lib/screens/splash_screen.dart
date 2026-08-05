@@ -177,35 +177,77 @@ class _SplashHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 130,
-      height: 130,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: RoadCareColors.primary.withValues(alpha: 0.18),
-            blurRadius: 36,
-            spreadRadius: 4,
-            offset: const Offset(0, 10),
+    return SizedBox(
+      height: 340,
+      child: Stack(
+        children: [
+          // Background image (design-provided)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                image: const DecorationImage(
+                  image: AssetImage('assets/images/spot_issue_bg.jpg'),
+                  fit: BoxFit.cover,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Center circular capture button like the design
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Icons.center_focus_strong,
+                      color: RoadCareColors.primary,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Bottom fade to white for the rest of the content
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.white],
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-      child: Center(
-        child: Container(
-          width: 84,
-          height: 84,
-          decoration: BoxDecoration(
-            color: RoadCareColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: const Icon(
-            Icons.add_location_alt_rounded,
-            size: 46,
-            color: RoadCareColors.primary,
-          ),
-        ),
       ),
     );
   }

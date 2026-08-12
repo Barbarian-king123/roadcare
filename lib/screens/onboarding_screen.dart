@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:roadcare/theme.dart';
 import 'home_screen.dart';
@@ -72,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
                 itemBuilder: (context, index) {
                   return _OnboardingHeaderIllustration(
-                    pageId: pages[index]["id"]!,
+                    pageId: pages[index]["di"]!,
                   );
                 },
               ),

@@ -72,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
                 itemBuilder: (context, index) {
                   return _OnboardingHeaderIllustration(
-                    pageId: pages[index]["di"]!,
+                    pageId: pages[index]["id"]!,
                   );
                 },
               ),

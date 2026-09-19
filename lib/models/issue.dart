@@ -1,3 +1,5 @@
+import 'dart:math';
+
 enum IssueSeverity { high, medium, low }
 
 enum IssueStatus { pending, inProgress, resolved }
@@ -15,6 +17,7 @@ class Issue {
   final String? imageAsset; // for local/dummy data before Firebase Storage
   final String description;
   final String reportedBy;
+  final String? reportedById;
   final double? latitude;
   final double? longitude;
 
@@ -31,6 +34,7 @@ class Issue {
     this.imageAsset,
     this.description = '',
     this.reportedBy = '',
+    this.reportedById,
     this.latitude,
     this.longitude,
   });
@@ -57,6 +61,77 @@ class Issue {
     }
   }
 
+  /// Calculates human readable distance from a user's location coordinates.
+  String distanceFrom(double? userLat, double? userLng) {
+    if (userLat == null || userLng == null || latitude == null || longitude == null) {
+      return "Nearby";
+    }
+    const double p = 0.017453292519943295; // Math.PI / 180
+    final double a = 0.5 -
+        cos((latitude! - userLat) * p) / 2 +
+        cos(userLat * p) *
+            cos(latitude! * p) *
+            (1 - cos((longitude! - userLng) * p)) /
+            2;
+    final double distKm = 12742 * asin(sqrt(a)); // 2 * R; R = 6371 km
+    if (distKm < 1) {
+      return "${(distKm * 1000).round()} m away";
+    }
+    return "${distKm.toStringAsFixed(1)} km away";
+  }
+
+  /// Relative time helper (e.g. "2 hrs ago", "Just now", "3 days ago")
+  String get timeAgo {
+    final diff = DateTime.now().difference(reportedAt);
+    if (diff.inDays > 30) {
+      return "${reportedAt.day}/${reportedAt.month}/${reportedAt.year}";
+    } else if (diff.inDays >= 1) {
+      return "${diff.inDays} ${diff.inDays == 1 ? 'day' : 'days'} ago";
+    } else if (diff.inHours >= 1) {
+      return "${diff.inHours} ${diff.inHours == 1 ? 'hr' : 'hrs'} ago";
+    } else if (diff.inMinutes >= 1) {
+      return "${diff.inMinutes} ${diff.inMinutes == 1 ? 'min' : 'mins'} ago";
+    } else {
+      return "Just now";
+    }
+  }
+
+  Issue copyWith({
+    String? id,
+    String? title,
+    String? type,
+    String? location,
+    DateTime? reportedAt,
+    IssueSeverity? severity,
+    IssueStatus? status,
+    int? upvotes,
+    String? imageUrl,
+    String? imageAsset,
+    String? description,
+    String? reportedBy,
+    String? reportedById,
+    double? latitude,
+    double? longitude,
+  }) {
+    return Issue(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      type: type ?? this.type,
+      location: location ?? this.location,
+      reportedAt: reportedAt ?? this.reportedAt,
+      severity: severity ?? this.severity,
+      status: status ?? this.status,
+      upvotes: upvotes ?? this.upvotes,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageAsset: imageAsset ?? this.imageAsset,
+      description: description ?? this.description,
+      reportedBy: reportedBy ?? this.reportedBy,
+      reportedById: reportedById ?? this.reportedById,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+    );
+  }
+
   // --- Firestore serialization ---
 
   Map<String, dynamic> toJson() {
@@ -69,8 +144,10 @@ class Issue {
       "status": status.name,
       "upvotes": upvotes,
       "imageUrl": imageUrl,
+      "imageAsset": imageAsset,
       "description": description,
       "reportedBy": reportedBy,
+      "reportedById": reportedById,
       "latitude": latitude,
       "longitude": longitude,
     };
@@ -83,7 +160,7 @@ class Issue {
       type: json["type"] ?? '',
       location: json["location"] ?? '',
       reportedAt: json["reportedAt"] != null
-          ? DateTime.parse(json["reportedAt"])
+          ? DateTime.tryParse(json["reportedAt"]) ?? DateTime.now()
           : DateTime.now(),
       severity: IssueSeverity.values.firstWhere(
         (e) => e.name == json["severity"],
@@ -93,69 +170,99 @@ class Issue {
         (e) => e.name == json["status"],
         orElse: () => IssueStatus.pending,
       ),
-      upvotes: json["upvotes"] ?? 0,
+      upvotes: (json["upvotes"] as num?)?.toInt() ?? 0,
       imageUrl: json["imageUrl"],
+      imageAsset: json["imageAsset"],
       description: json["description"] ?? '',
       reportedBy: json["reportedBy"] ?? '',
-      latitude: json["latitude"]?.toDouble(),
-      longitude: json["longitude"]?.toDouble(),
+      reportedById: json["reportedById"],
+      latitude: (json["latitude"] as num?)?.toDouble(),
+      longitude: (json["longitude"] as num?)?.toDouble(),
     );
   }
 }
 
-// --- Dummy data (used until Firestore is wired up) ---
+// --- Realistic initial issues with GPS coordinates (Default / Initial Seed) ---
 
 List<Issue> dummyIssues = [
   Issue(
     id: '1',
-    title: 'Pothole',
+    title: 'Large Pothole on Main Road',
     type: 'Pothole',
-    location: 'Main Street, Model Town',
-    reportedAt: DateTime(2024, 5, 20, 10, 30),
+    location: 'Main Street, Model Town, Delhi',
+    reportedAt: DateTime.now().subtract(const Duration(hours: 2)),
     severity: IssueSeverity.high,
     status: IssueStatus.pending,
     upvotes: 32,
-    imageAsset: 'assets/pothole1.jpg',
-    description: 'Large pothole on the left side of the road. Causing difficulty for vehicles.',
+    imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=600&q=80',
+    description: 'Deep pothole across the left lane causing major slow down and tire damage.',
     reportedBy: 'Rahul Sharma',
+    reportedById: 'sample_user_1',
+    latitude: 28.6139,
+    longitude: 77.2090,
   ),
   Issue(
     id: '2',
     title: 'Broken Street Light',
     type: 'Broken Street Light',
-    location: 'MG Road, Near Metro Station',
-    reportedAt: DateTime(2024, 5, 19, 20, 15),
+    location: 'MG Road, Near Metro Gate 2',
+    reportedAt: DateTime.now().subtract(const Duration(hours: 5)),
     severity: IssueSeverity.medium,
-    status: IssueStatus.pending,
+    status: IssueStatus.inProgress,
     upvotes: 18,
-    imageAsset: 'assets/streetlight1.jpg',
-    description: 'Street light has been out for a week, making the area unsafe at night.',
+    imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5293cb32b?auto=format&fit=crop&w=600&q=80',
+    description: 'Street light has been malfunctioning for a week, creating poor visibility at night.',
     reportedBy: 'Priya Nair',
+    reportedById: 'sample_user_2',
+    latitude: 28.6250,
+    longitude: 77.2180,
   ),
   Issue(
     id: '3',
-    title: 'Water Leakage',
+    title: 'Water Pipe Leakage',
     type: 'Water Leakage',
-    location: 'Civil Lines, Near Park',
-    reportedAt: DateTime(2024, 5, 19, 16, 45),
+    location: 'Civil Lines, Near Community Park',
+    reportedAt: DateTime.now().subtract(const Duration(hours: 14)),
     severity: IssueSeverity.medium,
     status: IssueStatus.pending,
     upvotes: 12,
-    imageAsset: 'assets/waterleak1.jpg',
-    description: 'Continuous water leakage from a broken pipe near the park entrance.',
+    imageUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80',
+    description: 'Continuous fresh water leakage from broken underground pipe flooding pedestrian walkway.',
     reportedBy: 'Amit Verma',
+    reportedById: 'sample_user_3',
+    latitude: 28.6050,
+    longitude: 77.1980,
   ),
   Issue(
     id: '4',
-    title: 'Damaged Manhole',
+    title: 'Damaged Manhole Cover',
     type: 'Damaged Manhole',
-    location: 'Green Avenue, Block B',
-    reportedAt: DateTime(2024, 5, 18, 11, 20),
+    location: 'Green Avenue, Block B Sector 14',
+    reportedAt: DateTime.now().subtract(const Duration(days: 1)),
     severity: IssueSeverity.high,
     status: IssueStatus.resolved,
-    upvotes: 25,
-    imageAsset: 'assets/manhole1.jpg',
-    description: 'Manhole cover is broken and poses a serious safety hazard.',
+    upvotes: 45,
+    imageUrl: 'https://images.unsplash.com/photo-1578885136359-16c8bd4d3a8e?auto=format&fit=crop&w=600&q=80',
+    description: 'Cracked concrete cover replaced with reinforced iron lid by municipal team.',
     reportedBy: 'Sneha Reddy',
+    reportedById: 'sample_user_4',
+    latitude: 28.6320,
+    longitude: 77.2250,
+  ),
+  Issue(
+    id: '5',
+    title: 'Damaged Footpath & Curb',
+    type: 'Damaged Footpath',
+    location: 'Ring Road, Near Bus Shelter 4',
+    reportedAt: DateTime.now().subtract(const Duration(days: 2)),
+    severity: IssueSeverity.low,
+    status: IssueStatus.inProgress,
+    upvotes: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1584467735815-f778f274e296?auto=format&fit=crop&w=600&q=80',
+    description: 'Broken paving blocks creating tripping hazard for elderly and morning walkers.',
+    reportedBy: 'Rohan Gupta',
+    reportedById: 'sample_user_5',
+    latitude: 28.5980,
+    longitude: 77.2150,
   ),
 ];

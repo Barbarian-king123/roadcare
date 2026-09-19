@@ -20,6 +20,9 @@ class FilterSortScreen extends StatefulWidget {
       'Pothole',
       'Broken Street Light',
       'Water Leakage',
+      'Damaged Manhole',
+      'Damaged Footpath',
+      'Fallen Tree',
     },
   });
 
@@ -36,7 +39,10 @@ class _FilterSortScreenState extends State<FilterSortScreen> {
     'Broken Street Light',
     'Water Leakage',
     'Damaged Manhole',
-    'Others',
+    'Damaged Footpath',
+    'Fallen Tree',
+    'Garbage Dump',
+    'Damaged Traffic Sign',
   ];
 
   @override
@@ -60,15 +66,40 @@ class _FilterSortScreenState extends State<FilterSortScreen> {
     );
   }
 
-  Widget _sortRadio(String label, SortOption option) {
-    return RadioListTile<SortOption>(
-      value: option,
-      groupValue: selectedSort,
-      onChanged: (val) => setState(() => selectedSort = val!),
-      title: Text(label, style: const TextStyle(fontSize: 15)),
-      activeColor: const Color(0xFF2563EB),
-      contentPadding: EdgeInsets.zero,
-      dense: true,
+  Widget _sortOptionTile(String label, SortOption option) {
+    final isSelected = selectedSort == option;
+    return InkWell(
+      onTap: () => setState(() => selectedSort = option),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFDBEAFE) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected ? const Color(0xFF2563EB) : Colors.grey,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? const Color(0xFF1E40AF) : const Color(0xFF0F172A),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -85,7 +116,14 @@ class _FilterSortScreenState extends State<FilterSortScreen> {
           }
         });
       },
-      title: Text(type, style: const TextStyle(fontSize: 15)),
+      title: Text(
+        type,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: isChecked ? FontWeight.w600 : FontWeight.w400,
+          color: const Color(0xFF0F172A),
+        ),
+      ),
       activeColor: const Color(0xFF2563EB),
       controlAffinity: ListTileControlAffinity.leading,
       contentPadding: EdgeInsets.zero,
@@ -110,35 +148,34 @@ class _FilterSortScreenState extends State<FilterSortScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 10),
             const Text(
               "Sort By",
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
-            const SizedBox(height: 6),
-            _sortRadio("Most Recent", SortOption.mostRecent),
-            _sortRadio("Most Upvoted", SortOption.mostUpvoted),
-            _sortRadio("Nearest", SortOption.nearest),
+            const SizedBox(height: 10),
+            _sortOptionTile("Most Recent", SortOption.mostRecent),
+            _sortOptionTile("Most Upvoted", SortOption.mostUpvoted),
+            _sortOptionTile("Nearest to Me", SortOption.nearest),
 
             const SizedBox(height: 24),
 
             const Text(
               "Issue Type",
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             ...allIssueTypes.map(_typeCheckbox),
 
-            const Spacer(),
+            const SizedBox(height: 32),
 
             SizedBox(
               width: double.infinity,
-              height: 55,
+              height: 54,
               child: ElevatedButton(
                 onPressed: _apply,
                 style: ElevatedButton.styleFrom(
@@ -149,19 +186,19 @@ class _FilterSortScreenState extends State<FilterSortScreen> {
                 ),
                 child: const Text(
                   "Apply Filters",
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
                 ),
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
             Center(
               child: TextButton(
                 onPressed: _reset,
                 child: const Text(
-                  "Reset",
-                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 15),
+                  "Reset to Default",
+                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ),
             ),

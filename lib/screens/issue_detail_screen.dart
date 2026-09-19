@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/issue.dart';
+import '../services/issue_service.dart';
 
 class IssueDetailScreen extends StatefulWidget {
   final Issue issue;
@@ -11,6 +14,7 @@ class IssueDetailScreen extends StatefulWidget {
 }
 
 class _IssueDetailScreenState extends State<IssueDetailScreen> {
+  final IssueService _issueService = IssueService();
   late int upvotes;
   bool hasUpvoted = false;
 
@@ -23,16 +27,27 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
   Color _severityColor(IssueSeverity severity) {
     switch (severity) {
       case IssueSeverity.high:
-        return Colors.red;
+        return const Color(0xFFDC2626);
       case IssueSeverity.medium:
-        return Colors.orange;
+        return const Color(0xFFEA580C);
       case IssueSeverity.low:
-        return Colors.green;
+        return const Color(0xFF2563EB);
+    }
+  }
+
+  Color _statusColor(IssueStatus status) {
+    switch (status) {
+      case IssueStatus.pending:
+        return const Color(0xFFDC2626);
+      case IssueStatus.inProgress:
+        return const Color(0xFFD97706);
+      case IssueStatus.resolved:
+        return const Color(0xFF16A34A);
     }
   }
 
   String _formatDate(DateTime date) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
     final minute = date.minute.toString().padLeft(2, '0');
     final period = date.hour >= 12 ? 'PM' : 'AM';
@@ -42,23 +57,25 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
   void _toggleUpvote() {
     setState(() {
       if (hasUpvoted) {
-        upvotes--;
+        upvotes = upvotes > 0 ? upvotes - 1 : 0;
+        hasUpvoted = false;
       } else {
         upvotes++;
+        hasUpvoted = true;
       }
-      hasUpvoted = !hasUpvoted;
     });
-    // TODO: persist upvote to Firestore once backend is wired up, e.g.
-    // FirebaseFirestore.instance.collection('issues').doc(widget.issue.id)
-    //     .update({'upvotes': FieldValue.increment(hasUpvoted ? 1 : -1)});
+
+    _issueService.toggleUpvote(widget.issue.id, hasUpvoted);
   }
 
   Future<void> _share() async {
     final issue = widget.issue;
-    final text = 'Road issue reported on RoadCare:\n'
-        '${issue.title} at ${issue.location}\n'
-        '${issue.description.isEmpty ? "" : "${issue.description}\n"}'
-        'Status: ${issue.status == IssueStatus.resolved ? "Resolved" : issue.severityLabel}';
+    final text = 'Road Hazard Report on RoadCare:\n'
+        '• Issue: ${issue.title} (${issue.type})\n'
+        '• Location: ${issue.location}\n'
+        '• Status: ${issue.statusLabel}\n'
+        '• Description: ${issue.description.isEmpty ? "Hazard reported by community member" : issue.description}\n'
+        'Help verify and upvote this report on RoadCare app!';
 
     await Share.share(text, subject: 'RoadCare — ${issue.title}');
   }
@@ -66,23 +83,27 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final issue = widget.issue;
+    final LatLng issueLocation = LatLng(
+      issue.latitude ?? 28.6139,
+      issue.longitude ?? 77.2090,
+    );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 240,
+            expandedHeight: 260,
             pinned: true,
-            backgroundColor: Colors.black,
+            backgroundColor: const Color(0xFF1E293B),
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
-                  color: Colors.black45,
+                  color: Colors.black54,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.arrow_back, color: Colors.white),
+                child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -91,23 +112,22 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                 icon: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: const BoxDecoration(
-                    color: Colors.black45,
+                    color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.share, color: Colors.white),
+                  child: const Icon(Icons.share, color: Colors.white, size: 20),
                 ),
                 onPressed: _share,
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: Colors.grey.shade300,
-                child: Icon(
-                  Icons.image_outlined,
-                  size: 60,
-                  color: Colors.grey.shade500,
-                ),
-              ),
+              background: issue.imageUrl != null && issue.imageUrl!.isNotEmpty
+                  ? Image.network(
+                      issue.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _buildFallbackHeaderImage(),
+                    )
+                  : _buildFallbackHeaderImage(),
             ),
           ),
           SliverToBoxAdapter(
@@ -116,30 +136,29 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title & Status Badges
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Text(
                           issue.title,
                           style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: issue.status == IssueStatus.resolved
-                              ? Colors.green
-                              : _severityColor(issue.severity),
-                          borderRadius: BorderRadius.circular(8),
+                          color: _statusColor(issue.status),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          issue.status == IssueStatus.resolved
-                              ? "Resolved"
-                              : issue.severityLabel,
+                          issue.statusLabel,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -150,111 +169,249 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
+                  // Location Row
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.location_on, size: 18, color: Color(0xFF2563EB)),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           issue.location,
-                          style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                          style: const TextStyle(
+                            color: Color(0xFF334155),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
 
+                  // Date Row
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
+                      Icon(Icons.access_time_rounded, size: 16, color: Colors.grey.shade500),
+                      const SizedBox(width: 6),
                       Text(
                         _formatDate(issue.reportedAt),
                         style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                       ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _severityColor(issue.severity).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          "${issue.severityLabel} Priority",
+                          style: TextStyle(
+                            color: _severityColor(issue.severity),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
 
                   const SizedBox(height: 20),
 
-                  Text(
-                    issue.description.isEmpty
-                        ? "No description provided."
-                        : issue.description,
-                    style: const TextStyle(fontSize: 15, height: 1.5),
+                  // Description Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Description",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          issue.description.isEmpty
+                              ? "No additional description provided."
+                              : issue.description,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.5,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 20),
+
+                  // Mini Interactive Map Preview
+                  const Text(
+                    "Location Map",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
 
                   Container(
                     width: double.infinity,
-                    height: 140,
+                    height: 180,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    child: Center(
-                      child: Icon(Icons.map_outlined, size: 40, color: Colors.grey.shade500),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      children: [
+                        FlutterMap(
+                          options: MapOptions(
+                            initialCenter: issueLocation,
+                            initialZoom: 15,
+                            interactionOptions: const InteractionOptions(
+                              flags: InteractiveFlag.none,
+                            ),
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.example.roadcare',
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: issueLocation,
+                                  width: 40,
+                                  height: 40,
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: _severityColor(issue.severity),
+                                    size: 38,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.gps_fixed, size: 12, color: Color(0xFF2563EB)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${issueLocation.latitude.toStringAsFixed(4)}, ${issueLocation.longitude.toStringAsFixed(4)}",
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.grey.shade300,
-                        child: const Icon(Icons.person, color: Colors.white),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Reported by",
-                              style: TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                            Text(
-                              issue.reportedBy.isEmpty ? "Anonymous" : issue.reportedBy,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                            ),
-                          ],
+                  // Reported By Info
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: const Color(0xFFDBEAFE),
+                          child: const Icon(Icons.person, color: Color(0xFF2563EB)),
                         ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(Icons.thumb_up_alt_outlined, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text("$upvotes", style: const TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Reported by",
+                                style: TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                              Text(
+                                issue.reportedBy.isEmpty ? "Community Volunteer" : issue.reportedBy,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.thumb_up_alt_rounded, size: 14, color: Color(0xFF2563EB)),
+                              const SizedBox(width: 6),
+                              Text(
+                                "$upvotes Upvotes",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 28),
 
+                  // Action Buttons
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _toggleUpvote,
                           icon: Icon(
-                            hasUpvoted ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
+                            hasUpvoted ? Icons.thumb_up : Icons.thumb_up_outlined,
                             size: 18,
                             color: Colors.white,
                           ),
-                          label: Text(hasUpvoted ? "Upvoted" : "Upvote"),
+                          label: Text(hasUpvoted ? "Upvoted ($upvotes)" : "Upvote Issue"),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF2563EB),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                             ),
                           ),
                         ),
@@ -263,14 +420,17 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _share,
-                          icon: const Icon(Icons.share, size: 18),
-                          label: const Text("Share"),
+                          icon: const Icon(Icons.share, size: 18, color: Color(0xFF2563EB)),
+                          label: const Text(
+                            "Share",
+                            style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
+                          ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            side: BorderSide(color: Colors.grey.shade400),
+                            side: const BorderSide(color: Color(0xFF2563EB)),
                           ),
                         ),
                       ),
@@ -283,6 +443,31 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFallbackHeaderImage() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.report_problem_rounded, size: 64, color: Colors.white70),
+            SizedBox(height: 8),
+            Text(
+              "RoadCare Issue Report",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }

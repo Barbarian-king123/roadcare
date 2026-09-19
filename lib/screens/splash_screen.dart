@@ -21,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 2000),
     )..forward();
 
     _progressController.addStatusListener((status) {
@@ -181,7 +181,7 @@ class _SplashHeaderCard extends StatelessWidget {
       height: 340,
       child: Stack(
         children: [
-          // Background image (design-provided)
+          // Background image
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -191,7 +191,7 @@ class _SplashHeaderCard extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -200,7 +200,7 @@ class _SplashHeaderCard extends StatelessWidget {
             ),
           ),
 
-          // Center circular capture button like the design
+          // Center circular capture button
           Positioned.fill(
             child: Center(
               child: Container(
@@ -211,7 +211,7 @@ class _SplashHeaderCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -220,7 +220,7 @@ class _SplashHeaderCard extends StatelessWidget {
                 child: Center(
                   child: IconButton(
                     onPressed: () {},
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.center_focus_strong,
                       color: RoadCareColors.primary,
                       size: 32,
@@ -231,14 +231,14 @@ class _SplashHeaderCard extends StatelessWidget {
             ),
           ),
 
-          // Bottom fade to white for the rest of the content
+          // Bottom fade to white
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             height: 120,
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

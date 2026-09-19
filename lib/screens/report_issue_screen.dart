@@ -1,21 +1,38 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/issue.dart';
+import '../services/issue_service.dart';
 
 class ReportIssueScreen extends StatefulWidget {
-  const ReportIssueScreen({super.key});
+  final double? initialLatitude;
+  final double? initialLongitude;
+
+  const ReportIssueScreen({
+    super.key,
+    this.initialLatitude,
+    this.initialLongitude,
+  });
 
   @override
   State<ReportIssueScreen> createState() => _ReportIssueScreenState();
 }
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
-  File? selectedImage;
+  final IssueService _issueService = IssueService();
+
+  XFile? _selectedImage;
+  Uint8List? _imageBytes;
   String? selectedIssueType;
   bool _locating = false;
+  bool _isSubmitting = false;
+
+  double? _currentLatitude;
+  double? _currentLongitude;
+
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
 
@@ -27,8 +44,45 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     'Damaged Footpath',
     'Fallen Tree',
     'Garbage Dump',
+    'Damaged Traffic Sign',
     'Other',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialLatitude != null && widget.initialLongitude != null) {
+      _currentLatitude = widget.initialLatitude;
+      _currentLongitude = widget.initialLongitude;
+      _reverseGeocode(widget.initialLatitude!, widget.initialLongitude!);
+    }
+  }
+
+  Future<void> _reverseGeocode(double lat, double lng) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        final parts = [p.street, p.subLocality, p.locality, p.administrativeArea]
+            .where((e) => e != null && e.trim().isNotEmpty)
+            .toList();
+        if (parts.isNotEmpty && mounted) {
+          setState(() {
+            locationController.text = parts.join(', ');
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    if (mounted) {
+      setState(() {
+        locationController.text = "${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}";
+      });
+    }
+  }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -43,16 +97,27 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Color(0xFF2563EB)),
-                title: const Text("Take a photo"),
+                title: const Text("Take a photo", style: TextStyle(fontWeight: FontWeight.w600)),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Color(0xFF2563EB)),
-                title: const Text("Choose from gallery"),
+                title: const Text("Choose from gallery", style: TextStyle(fontWeight: FontWeight.w600)),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
+              const SizedBox(height: 12),
             ],
           ),
         );
@@ -61,22 +126,32 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
     if (source == null) return;
 
-    final picked = await picker.pickImage(source: source, imageQuality: 80);
-    if (picked != null) {
-      setState(() {
-        selectedImage = File(picked.path);
-      });
+    try {
+      final picked = await picker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1600,
+      );
+
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _selectedImage = picked;
+          _imageBytes = bytes;
+        });
+      }
+    } catch (e) {
+      _showSnack("Could not pick image: $e");
     }
   }
 
-  /// Fetches the device's current GPS position and reverse-geocodes it into
-  /// a human-readable address, filling the location field automatically.
+  /// Fetches device GPS coordinates and reverse geocodes into formatted location
   Future<void> _useCurrentLocation() async {
     setState(() => _locating = true);
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showSnack("Please enable location services to use this");
+        _showSnack("Please enable location services on your device");
         return;
       }
 
@@ -84,41 +159,28 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showSnack("Location permission denied");
+          _showSnack("Location permission was denied");
           return;
         }
       }
       if (permission == LocationPermission.deniedForever) {
-        _showSnack("Location permission permanently denied. Enable it from app settings.");
+        _showSnack("Location permission is permanently denied. Please enable in Settings.");
         return;
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
       );
 
-      String formatted = "${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}";
+      _currentLatitude = position.latitude;
+      _currentLongitude = position.longitude;
 
-      try {
-        final placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-        if (placemarks.isNotEmpty) {
-          final p = placemarks.first;
-          final parts = [p.street, p.subLocality, p.locality]
-              .where((e) => e != null && e.trim().isNotEmpty)
-              .toList();
-          if (parts.isNotEmpty) formatted = parts.join(', ');
-        }
-      } catch (_) {
-        // Reverse geocoding failed (e.g. offline) — fall back to raw coords.
-      }
-
-      if (!mounted) return;
-      setState(() => locationController.text = formatted);
+      await _reverseGeocode(position.latitude, position.longitude);
     } catch (e) {
-      _showSnack("Couldn't get your location. Please enter it manually.");
+      _showSnack("Could not determine location. Please type it manually.");
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -133,13 +195,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       case 'Broken Street Light':
       case 'Water Leakage':
       case 'Garbage Dump':
+      case 'Damaged Traffic Sign':
         return IssueSeverity.medium;
       default:
         return IssueSeverity.low;
     }
   }
 
-  void _submitReport() {
+  Future<void> _submitReport() async {
     if (selectedIssueType == null) {
       _showSnack("Please select an issue type");
       return;
@@ -149,29 +212,56 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       return;
     }
     if (locationController.text.trim().isEmpty) {
-      _showSnack("Please add a location");
+      _showSnack("Please enter or detect the location");
       return;
     }
 
-    final newIssue = Issue(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: selectedIssueType!,
-      type: selectedIssueType!,
-      location: locationController.text.trim(),
-      reportedAt: DateTime.now(),
-      severity: _severityFor(selectedIssueType),
-      status: IssueStatus.pending,
-      upvotes: 0,
-      description: descriptionController.text.trim(),
-      reportedBy: "You",
-    );
+    setState(() => _isSubmitting = true);
 
-    // NOTE: still writing to the in-memory dummyIssues list. Swap this for
-    // a Firestore write (e.g. FirebaseFirestore.instance.collection('issues')
-    // .add(newIssue.toMap())) once your backend schema is ready.
-    dummyIssues.insert(0, newIssue);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final reporterName = user?.displayName ?? (user?.email != null ? user!.email!.split('@').first : "You");
+      final reporterId = user?.uid ?? 'guest_user';
 
-    Navigator.pop(context);
+      // Fallback coordinate if GPS wasn't clicked (e.g. New Delhi default)
+      final lat = _currentLatitude ?? 28.6139;
+      final lng = _currentLongitude ?? 77.2090;
+
+      await _issueService.createIssue(
+        title: selectedIssueType!,
+        type: selectedIssueType!,
+        location: locationController.text.trim(),
+        description: descriptionController.text.trim(),
+        severity: _severityFor(selectedIssueType),
+        reportedBy: reporterName,
+        reportedById: reporterId,
+        latitude: lat,
+        longitude: lng,
+        imageFile: _selectedImage,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 10),
+              Expanded(child: Text("Issue reported successfully! Thank you.")),
+            ],
+          ),
+          backgroundColor: Color(0xFF16A34A),
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      _showSnack("Failed to submit report. Please try again.");
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   void _showSnack(String message) {
@@ -215,18 +305,38 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
               onTap: _pickImage,
               child: Container(
                 width: double.infinity,
-                height: 160,
+                height: 180,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.grey.shade300,
+                    color: _imageBytes != null ? const Color(0xFF2563EB) : Colors.grey.shade300,
                     width: 1.5,
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: selectedImage != null
-                    ? Image.file(selectedImage!, fit: BoxFit.cover)
+                child: _imageBytes != null
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.memory(
+                            _imageBytes!,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.edit, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ],
+                      )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -290,7 +400,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
               controller: descriptionController,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: "Describe the issue...",
+                hintText: "Describe the issue details and hazards...",
                 filled: true,
                 fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(
@@ -314,7 +424,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             TextField(
               controller: locationController,
               decoration: InputDecoration(
-                hintText: "Model Town, Main Street",
+                hintText: "Street name, landmark or city",
                 filled: true,
                 fillColor: Colors.grey.shade50,
                 suffixIcon: _locating
@@ -329,6 +439,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     : IconButton(
                         icon: const Icon(Icons.my_location, color: Color(0xFF2563EB)),
                         onPressed: _useCurrentLocation,
+                        tooltip: "Use current GPS location",
                       ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -347,17 +458,37 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                onPressed: _submitReport,
+                onPressed: _isSubmitting ? null : _submitReport,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
+                  disabledBackgroundColor: const Color(0xFF93C5FD),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  "Submit Report",
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
-                ),
+                child: _isSubmitting
+                    ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            "Submitting Report...",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                        ],
+                      )
+                    : const Text(
+                        "Submit Report",
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
               ),
             ),
 

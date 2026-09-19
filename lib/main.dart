@@ -6,9 +6,13 @@ import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // If running in development without configured google-services.json
+  }
   runApp(const RoadCareApp());
 }
 
@@ -21,6 +25,7 @@ class RoadCareApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'RoadCare',
       theme: ThemeData(
+        useMaterial3: true,
         colorScheme: const ColorScheme(
           brightness: Brightness.light,
           primary: RoadCareColors.primary,
@@ -29,11 +34,9 @@ class RoadCareApp extends StatelessWidget {
           onSecondary: Colors.white,
           error: RoadCareColors.error,
           onError: Colors.white,
-          background: RoadCareColors.background,
-          onBackground: RoadCareColors.onSurface,
           surface: RoadCareColors.surface,
           onSurface: RoadCareColors.onSurface,
-          surfaceVariant: RoadCareColors.surfaceVariant,
+          surfaceContainerHighest: RoadCareColors.surfaceVariant,
           outline: RoadCareColors.outline,
         ),
         scaffoldBackgroundColor: RoadCareColors.background,

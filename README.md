@@ -1,9 +1,15 @@
 # 🛣️ RoadCare — Smart Civic Infrastructure Reporting Platform
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_App-roadcare--2d68d.web.app-2563EB?style=for-the-badge)](https://roadcare-2d68d.web.app)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20Storage-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
 [![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-Leaflet%2FFlutterMap-7EBC6F?style=for-the-badge&logo=openstreetmap&logoColor=white)](https://www.openstreetmap.org)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Windows-blue?style=for-the-badge)](https://flutter.dev)
+
+---
+
+### 🚀 **Live Production Deployment URL:**
+👉 **[https://roadcare-2d68d.web.app](https://roadcare-2d68d.web.app)** *(Alternative: [https://roadcare-2d68d.firebaseapp.com](https://roadcare-2d68d.firebaseapp.com))*
 
 **RoadCare** is a production-ready, community-driven civic infrastructure application that empowers citizens to spot, photograph, and report road hazards (such as potholes, broken street lights, open manholes, damaged signs, and water leakages) directly to municipal response teams with real-time GPS coordinates and photo evidence.
 
@@ -45,39 +51,8 @@
 | **Backend & Database** | Google Cloud Firestore |
 | **Media Storage** | Google Cloud Firebase Storage |
 | **Authentication** | Firebase Auth & Google Sign-In |
+| **Hosting & CDN** | Firebase Hosting (Global CDN) |
 | **Design System** | Custom Material 3 Design (`RoadCareColors`) |
-
----
-
-## 📁 Project Structure
-
-```text
-lib/
-├── firebase_options.dart   # Generated Firebase configuration
-├── main.dart               # App entrypoint and theme definition
-├── theme.dart              # Color tokens, styles, and typography
-├── models/
-│   └── issue.dart          # Issue model, severity/status enums, serialization
-├── services/
-│   ├── auth_service.dart   # Firebase Authentication & Google Sign-In
-│   ├── issue_service.dart  # Cloud Firestore sync, streams & upvoting
-│   └── storage_service.dart# Cross-platform Firebase Storage uploader
-├── screens/
-│   ├── splash_screen.dart       # Animated brand intro screen
-│   ├── onboarding_screen.dart   # 3-step feature onboarding carousel
-│   ├── loginscreen.dart         # Email/password & Google login
-│   ├── signupscreen.dart        # New account creation
-│   ├── home_screen.dart         # Live dashboard & recent reports
-│   ├── map_screen.dart          # Interactive OpenStreetMap with pins
-│   ├── report_issue_screen.dart # Image upload, GPS picker & report form
-│   ├── issue_detail_screen.dart # Detail screen with mini-map & upvote
-│   ├── my_reports_screen.dart   # Filtered user report history
-│   ├── notification_screen.dart # Alerts & repair status updates
-│   ├── profile_screen.dart      # User profile, avatar upload & settings
-│   └── filtersortscreen.dart    # Category and sort filters
-└── widgets/
-    └── bottom_nav_bar.dart      # Navigation widget
-```
 
 ---
 
@@ -124,8 +99,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /issues/{issueId} {
-      allow read: if true; // Public can view reports on map and home
-      allow create: if true; // Authenticated & guest users can report
+      allow read: if true;
+      allow create: if true;
       allow update: if request.auth != null || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes']);
       allow delete: if request.auth != null;
     }
@@ -154,39 +129,24 @@ service firebase.storage {
 
 ## 🌐 Production Deployment Guide
 
-### Option 1: Deploy to Firebase Hosting (Web)
+### Deploy to Firebase Hosting (Live Web App)
 
-1. Log in to Firebase CLI:
-   ```bash
-   firebase login
-   ```
-
-2. Build the optimized production web bundle:
+1. Build the web release:
    ```bash
    flutter build web --release
    ```
 
-3. Deploy directly to Firebase Hosting:
+2. Deploy directly:
    ```bash
    firebase deploy --only hosting
    ```
-   *Your live web app URL will be displayed in the terminal output.*
+   **Live URL:** `https://roadcare-2d68d.web.app`
 
 ---
 
-### Option 2: Deploy to GitHub Pages (Web)
+### Build Production Android APK / Google Play App Bundle
 
-1. Build web with base-href:
-   ```bash
-   flutter build web --release --base-href "/roadcare/"
-   ```
-2. Push contents of `build/web` to the `gh-pages` branch.
-
----
-
-### Option 3: Build Production Android APK / Google Play App Bundle
-
-1. **Generate Release APK (for direct testing/distribution)**:
+1. **Generate Release APK**:
    ```bash
    flutter build apk --release
    ```
@@ -197,8 +157,3 @@ service firebase.storage {
    flutter build appbundle --release
    ```
    *The Bundle will be generated at:* `build/app/outputs/bundle/release/app-release.aab`
-
----
-
-## 📄 License
-This project is open-source under the MIT License.
